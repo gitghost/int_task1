@@ -18,15 +18,15 @@ namespace task1
 
                 if (digit % 2 == 0 && digit % 3 == 0)
                 {
-                    Console.Write("\t FizzBuzz");               //w zadaniu jest dolny i górny cudzysłów
-                }                                               //
-                else if (digit % 2 == 0 && digit % 3 != 0)
+                    Console.Write("\t ,,FizzBuzz,,");               //w zadaniu jest dolny i górny cudzysłów
+                }                                                   //z tego co widzę konsola ich nie rozróżnia
+                else if (digit % 2 == 0 && digit % 3 != 0)          //są przecinki i apostrofy #u_mnie_działa
                 {
-                    Console.Write("\t Fizz");
+                    Console.Write("\t ,,Fizz''");
                 }
                 else if (digit % 2 != 0 && digit % 3 == 0)
                 {
-                    Console.Write("\t Buzz");
+                    Console.Write("\t ''Buzz''");
                 }
                 else
                 {
@@ -43,6 +43,7 @@ namespace task1
         public static void DeepDive()
         {
             Console.WriteLine("\t Wybrano funkcje DeepDive.");
+            Console.WriteLine("\t Ile folderów chcesz utworzyć?");
             Console.Write("\t Wprowadz cyfre od 1 do 5: \t");
             ushort digit = 0;
             string line, path = "";
@@ -52,15 +53,9 @@ namespace task1
             try
             {
                 digit = ushort.Parse(line);
-                if (digit == 0) { Console.WriteLine("\t Folderu nie utworzono. \n"); }
-                if (digit > 5) { Console.WriteLine("\t Podano za wysoką cyfrę."); digit = 0; }
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("\t Podano nieprawidłowe dane wejściowe.");
-            }
-            finally
-            {
+                if (digit == 0) { Console.WriteLine("\t Folderu nie utworzono."); }
+                if (digit > 5) {digit = 0; }
+
                 Guid ga = Guid.NewGuid();
                 Guid[] gga = new Guid[digit];           //tworze tablice guidów  ->
                 for (int i = 0; i < digit; i++)
@@ -71,72 +66,160 @@ namespace task1
                 {
                     path += gga[i].ToString() + "/";      // -> tworze z nich ścieżkę
                 }
-                try
-                {
-                    di = new DirectoryInfo(path);
-                    di.Create();
-                }
-                catch (ArgumentException)
-                {
-                    Console.WriteLine("\t Nieprawidłowa ścieżka folderu.");//<- zbędne?
-                }
+                di = new DirectoryInfo(path);
+                di.Create();
             }
+           
+            catch (FormatException)  {Console.WriteLine("\t Podano nieprawidłowe dane wejściowe.");}
+            catch (Exception){Console.WriteLine("\t Podano nieprawidłową cyfrę."); }
+
+
             Console.Write("\n");
         } //tworzenie struktury folderów
 
         public static void DrownItDown()
         {
             Console.WriteLine("\t Wybrano funkcje DrownItDown.");
-            Console.Write("\t Wprowadz cyfre od 1 do 5: \t");
             ushort digit = 0;
-            string line, path = "";
-            line = Console.ReadLine();
-            int temp;       // PATRZ NA INTA
+            ushort depth = 0;
+            string line;
+            string[] subdigits;
+            int subdir;
+            int count = 0;
+            string yesno="n";
 
-            DirectoryInfo di = new DirectoryInfo("./");
+            FileStream fs;
             
+            DirectoryInfo di = new DirectoryInfo("./");           
             DirectoryInfo[] folders = di.GetDirectories();
-            foreach (DirectoryInfo folder in folders)
-            {
-                Console.WriteLine(folder.Name);
-                temp=Submarine(folder);
-                Console.WriteLine("DEPTH: "+temp);      //TEN INT
-            }
-            
-            //path = di.ToString();
-            //Submarine(di);
 
-            //Console.WriteLine("GLEBOKOSC?? ";
-            try
+            if (folders.Length==0)
             {
-                digit = ushort.Parse(line);
-                if (digit == 0) { Console.WriteLine("\t Liczba nie może być zerem."); }
-                if (digit > 5) { Console.WriteLine("\t Podano za wysoką cyfrę."); digit = 0; }
+                Console.WriteLine("\t *BRAK FOLDERÓW*   Użyj funkcji DeepDive.\n");
             }
-            catch (Exception)
-            {
-                Console.WriteLine("\t Podano nieprawidłowe dane wejściowe.");
-            }
-        }
+            else
+            {               
+                Console.WriteLine("\t Aktualna struktura folderów: \n");
+                foreach (DirectoryInfo folder in folders)                       
+                {
+                    count++;   //liczę głębokość folderu
+                    Console.Write("\t " +count+". "+ folder.Name);
+                    subdir = Submarine(folder);
+                    Console.WriteLine("  podfolderów: " + (subdir - 1));
+                }
+                Console.Write("\n\t Wybierz folder i głębokość oddzielone spacjami:  ");
+                line = Console.ReadLine();
 
-        static int Submarine(DirectoryInfo root)   //będziemy nurkować -.-'
+                subdigits = line.Split(" ",2, StringSplitOptions.RemoveEmptyEntries);
+                try
+                {
+                    digit = ushort.Parse(subdigits[0]);
+                    depth = ushort.Parse(subdigits[1]);
+
+                    if (digit == 0) { Console.WriteLine("\t Numer Folderu nie może być zerem."); }
+                    else if (depth == 0) { Console.WriteLine("\t Głębokość nie może być zerem"); }
+                    else
+                    {
+                        line=folders[digit-1].Name;
+                        if (depth > 1) { line +=GetPath(folders[digit-1], depth-1); } //nurkowanie  po ścieżkę pliku
+
+                        Console.WriteLine();
+                        FileInfo fi = new FileInfo(line+"\\PLIK");                      
+                        try
+                        {
+                            if (fi.Exists == true)
+                            {
+                                bool error = false;
+                                do
+                                {                                   
+                                    Console.Write("\t Podany plik istnieje. Czy chcesz go nadpisać? [T]/[N]   ");
+                                    try
+                                    {
+                                        yesno = Console.ReadLine();
+                                        if (yesno=="t" || yesno == "T")
+                                        {
+                                            fi.Delete();            //usunięcie i stworzenie nowego to chyba nie to samo co nadpisanie
+                                            fs = fi.Create();       
+                                            fs.Close();
+                                            
+                                            Console.WriteLine("\t Nadpisano plik.");
+                                            error = false;
+                                        }
+                                        else if (yesno == "n" || yesno == "N")
+                                        {Console.WriteLine("\t Pliku nie nadpisano."); error = false;}
+                                        else
+                                        {Console.WriteLine("\t Podano nieprawidłowe dane wejściowe.");error = true; }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine("\t "+e.Message);
+                                        error = true;
+                                    }
+                                } while (error == true);                               
+                            }
+                            else
+                            {
+                                fs=fi.Create();
+                                fs.Close();
+                                Console.WriteLine("\t Utworzono nowy plik.");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("\t Błąd podczas operacji na pliku");
+                            Console.WriteLine("\t" +e.Message);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("\t Podano nieprawidłowe dane wejściowe.");
+                }
+                Console.Write("\n");
+            }
+        } // tworzenie pliku na zadanej głębokości
+
+        static int Submarine(DirectoryInfo root)   
         {
-            int temp = 0;
+            int temp = 1;
             DirectoryInfo di = root;
             DirectoryInfo[] folders = di.GetDirectories();
             if (folders.Length != 0)
             {
-                temp++;
-                Console.WriteLine(folders[0].Name);
+                //Console.WriteLine(folders[0].Name);
                 return temp += Submarine(folders[0]);
             }
             else
             { return 1; }
+        } //glębokość folderów
 
-        }
+        static string GetPath(DirectoryInfo root,int depth)
+        {
+            int temp = depth-1;
+            string path = "/";
+            DirectoryInfo di = root;
+            DirectoryInfo[] folders = di.GetDirectories();
+            try
+            {
+                path = "\\" + folders[0].Name;
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                Console.WriteLine("\t Przekroczono głębokość wybranego folderu.");
+                throw e;
+            }
+            if (temp!=0)
+            {                             
+                return path +=GetPath(folders[0],temp);
+            }
+            else
+            {
+                return path+"\\";
+            }
+        } // ścieżka do subfolderów
 
         public static void Pick()
-        { Console.WriteLine("Wybierz numer od 0 do 3: "); } //wybierz numer
+        { Console.Write("Wybierz numer od 0 do 3:  "); } //wybierz numer
 
         public static void Info()
         {
@@ -151,7 +234,8 @@ namespace task1
         static void Main()
         {                       
             Info();
-            Console.WriteLine("wpisz help by pokazac menu ponownie \n");
+            Console.WriteLine("wpisz info by pokazac menu ponownie. \n");
+            Pick();
             int temp=5;
             string line="";
             do
@@ -159,7 +243,7 @@ namespace task1
                 try
                 {
                     line = Console.ReadLine();
-                    if (line == "help") Info();
+                    if (line == "info") Info();
                     else if (line == " " || line == "")temp = 5; //na wypadek "przypadkowych" błędów użytkownika
                     else
                         temp = Int32.Parse(line); 
@@ -167,6 +251,7 @@ namespace task1
                 catch
                 {
                     Console.WriteLine("Podano nieprawidłowe dane wejściowe.");
+                    temp = 5;
                 }
                 finally
                 {                   
@@ -196,6 +281,6 @@ namespace task1
             } while (temp != 0);         
             Console.WriteLine("Program zakończono.");
             //Console.ReadKey();
-        }
+        } // główna pętla programu
     }
 }
